@@ -183,14 +183,12 @@ class MqttPlugin(octoprint.plugin.SettingsPlugin,
 				else:
 					data = dict(payload)
 				data["_event"] = event
-				test = RepeatedTimer(10.0, mqtt_publish_with_timestamp, [topic.format(event=event), data])
-				test.start()
-				# if event not in publish_timers:
-				# 	publish_timers[event] = RepeatedTimer(10.0, mqtt_publish_with_timestamp, [topic.format(event=event), data])
-				# else:
-				# 	publish_timers[event].cancel()
-				# 	publish_timers[event] = RepeatedTimer(10.0, mqtt_publish_with_timestamp, [topic.format(event=event), data])
-				# publish_timers[event].start()
+				if event not in publish_timers:
+					publish_timers[event] = RepeatedTimer(10.0, self.mqtt_publish_with_timestamp, [topic.format(event=event), data], run_first=True)
+				else:
+					publish_timers[event].cancel()
+					publish_timers[event] = RepeatedTimer(10.0, self.mqtt_publish_with_timestamp, [topic.format(event=event), data], run_first=True)
+				publish_timers[event].start()
 
 				#self.mqtt_publish_with_timestamp(topic.format(event=event), data)
 
