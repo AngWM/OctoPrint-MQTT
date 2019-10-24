@@ -10,6 +10,7 @@ import octoprint.plugin
 
 from octoprint.events import Events
 from octoprint.util import dict_minimal_mergediff
+from octoprint.util import RepeatedTimer
 
 
 class MqttPlugin(octoprint.plugin.SettingsPlugin,
@@ -45,6 +46,8 @@ class MqttPlugin(octoprint.plugin.SettingsPlugin,
 
 	LWT_CONNECTED = "connected"
 	LWT_DISCONNECTED = "disconnected"
+
+	publish_timers = {}
 
 	def __init__(self):
 		self._mqtt = None
@@ -180,7 +183,14 @@ class MqttPlugin(octoprint.plugin.SettingsPlugin,
 				else:
 					data = dict(payload)
 				data["_event"] = event
-				self.mqtt_publish_with_timestamp(topic.format(event=event), data)
+				if event not in publish_timers:
+					publish_timers[event] = RepeatedTimer(10.0, self.mqtt_publish_with_timestamp(topic.format(event=event), data))
+				else:
+					publish_timers[event].cancel()
+					publish_timers[event] = RepeatedTimer(10.0, self.mqtt_publish_with_timestamp(topic.format(event=event), data))
+				publish_timers[event].start()
+
+				#self.mqtt_publish_with_timestamp(topic.format(event=event), data)
 
 	##~~ ProgressPlugin API
 
